@@ -13,7 +13,9 @@ async def send_message(message, user_message,username, is_private):
     except Exception as e:
         print(e)
 '''
+
 def roll_number(*args): 
+    '''Funkcja zwracająca losową liczbę'''
     len_of_args=len(args)
     if len_of_args==0:
         return str(random.randint(1,6))
@@ -30,25 +32,27 @@ def roll_number(*args):
 
 
 def run_discord_bot():
-    
+    '''Wywolanie bota'''
     TOKEN = 'MTA0Nzk5MjU1NDM5NTgxMTk1Mg.GtSoze.1Ftqn8-m0E5neMWUOWHMkOPdXMjXrchPJsLqUU'
     intents = discord.Intents.default()
     intents.message_content = True
     client=commands.Bot(intents=intents,command_prefix='!')
-
+    '''Wersja bota'''
     @client.command(name='version',help='Version of bot')
     async def version(context):
         myEmbed=discord.Embed(title="Current version",description="Version 1.0", color=0x00ff00)
         myEmbed.add_field(name="Version:",value="v1.0",inline=False)
         
         await context.message.channel.send(embed=myEmbed)
+    '''Losowanie liczby'''
     @client.command(name='roll')
     async def roll(context, *args):
         myEmbed=discord.Embed(title="ROLLED:",description=roll_number(*args), color=0x00ff00)
         myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=False)
-        await context.message.channel.send(embed=myEmbed)    
-    @client.command(name='ping_me')
-    async def ping_me(context):
+        await context.message.channel.send(embed=myEmbed)   
+    '''Pinguje autora''' 
+    @client.command(name='pingme')
+    async def pingme(context):
         await context.message.channel.send(f"{context.message.author.mention}")
     '''
     @client.command()
