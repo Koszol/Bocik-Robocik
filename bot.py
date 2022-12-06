@@ -3,6 +3,9 @@ import discord
 import responses
 from discord.ext import commands
 from discord.utils import get
+from youtube_dl import YoutubeDL
+from discord import FFmpegPCMAudio
+from discord import TextChannel
 import random
 
 '''
@@ -29,7 +32,6 @@ def roll_number(*args):
             return str(random.randint(int(args[0]),int(args[1])))
     else:
         return 'Wrong number of arguments'
-
 
 
 def run_discord_bot():
@@ -81,6 +83,24 @@ def run_discord_bot():
         voice=get(client.voice_clients,guild=context.guild)         # bierze informacje o voice chacie
         await voice.disconnect()
     
+    @client.command(name="play")
+    async def play(context, url:str):
+        ydl_options={
+            'format': 'bestaudio',
+            'noplaylist':'True'
+            }
+        ffmpeg_options={
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
+            'options': '-vn'}
+        voice=get(client.voice_clients,guild=context.guild)
+        if not voice.is_playing():
+            with YoutubeDL(ydl_options) as ydl:
+                info=ydl.extract_info(url, download=False)
+            URL=info['url']
+            voice.play(FFmpegPCMAudio(URL,**ffmpeg_options))
+            voice.is_playing()
+            await context.message.channel.send("Bot is playing")
+
     '''
     @client.command()
     async def help(context):
