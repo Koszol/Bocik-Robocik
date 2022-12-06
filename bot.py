@@ -2,6 +2,7 @@
 import discord
 import responses
 from discord.ext import commands
+from discord.utils import get
 import random
 
 '''
@@ -32,11 +33,13 @@ def roll_number(*args):
 
 
 def run_discord_bot():
+
     '''Wywolanie bota'''
     TOKEN = 'MTA0Nzk5MjU1NDM5NTgxMTk1Mg.GtSoze.1Ftqn8-m0E5neMWUOWHMkOPdXMjXrchPJsLqUU'
     intents = discord.Intents.default()
     intents.message_content = True
     client=commands.Bot(intents=intents,command_prefix='!')
+
     '''Wersja bota'''
     @client.command(name='version',help='Version of bot')
     async def version(context):
@@ -44,16 +47,40 @@ def run_discord_bot():
         myEmbed.add_field(name="Version:",value="v1.0",inline=False)
         
         await context.message.channel.send(embed=myEmbed)
+
     '''Losowanie liczby'''
     @client.command(name='roll')
     async def roll(context, *args):
         myEmbed=discord.Embed(title="ROLLED:",description=roll_number(*args), color=0x00ff00)
         myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=False)
         await context.message.channel.send(embed=myEmbed)   
+
     '''Pinguje autora''' 
     @client.command(name='pingme')
     async def pingme(context):
         await context.message.channel.send(f"{context.message.author.mention}")
+    
+    '''Obsluga voice-chatu'''
+    @client.command(name="join")
+    async def join(context):
+        global voice
+        channel=context.author.voice.channel
+        voice=get(client.voice_clients,guild=context.guild)
+        if voice and voice.is_connected():
+            if voice.channel==channel:
+                await context.message.channel.send(f"I'm already here!")
+            else:
+                await voice.disconnect()
+                await context.message.channel.send(f"Changing voice channel to {channel}")
+                await channel.connect()
+        else:
+            await channel.connect()
+    
+    @client.command(name="disconnect")
+    async def disconnect(context):
+        voice=get(client.voice_clients,guild=context.guild)         # bierze informacje o voice chacie
+        await voice.disconnect()
+    
     '''
     @client.command()
     async def help(context):
@@ -65,6 +92,7 @@ def run_discord_bot():
         await context.message.channel.send(embed=EmbedChannel)
         help_text.close()
     '''
+    
     @client.event
     async def on_ready():
         print(f'{client.user} is running!')
