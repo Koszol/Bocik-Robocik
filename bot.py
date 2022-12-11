@@ -8,15 +8,23 @@ from discord import FFmpegPCMAudio
 from discord import TextChannel
 import random
 
-'''
-async def send_message(message, user_message,username, is_private):
-    try:
-        response = responses.get_response(user_message,username)
-        await message.author.send(response) if is_private else await message.channel.send(response)
+global voice
 
-    except Exception as e:
-        print(e)
-'''
+global color
+color=0x00ff00
+
+
+
+async def joinVC(context,voice,channel):
+    if voice and voice.is_connected():
+        if voice.channel==channel:
+            await context.message.channel.send(f"I'm already here!")
+        else:
+            await voice.disconnect()
+            await context.message.channel.send(f"Changing voice channel to {channel}")
+            await channel.connect()
+    else:
+        await channel.connect()
 
 def roll_number(*args): 
     '''Funkcja zwracająca losową liczbę'''
@@ -45,7 +53,7 @@ def run_discord_bot():
     '''Wersja bota'''
     @client.command(name='version',help='Version of bot')
     async def version(context):
-        myEmbed=discord.Embed(title="Current version",description="Version 1.0", color=0x00ff00)
+        myEmbed=discord.Embed(title="Current version",description="Version 1.0", color=color)
         myEmbed.add_field(name="Version:",value="v1.0",inline=False)
         
         await context.message.channel.send(embed=myEmbed)
@@ -53,7 +61,7 @@ def run_discord_bot():
     '''Losowanie liczby'''
     @client.command(name='roll')
     async def roll(context, *args):
-        myEmbed=discord.Embed(title="ROLLED:",description=roll_number(*args), color=0x00ff00)
+        myEmbed=discord.Embed(title="ROLLED:",description=roll_number(*args), color=color)
         myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=False)
         await context.message.channel.send(embed=myEmbed)   
 
@@ -65,29 +73,24 @@ def run_discord_bot():
     '''Obsluga voice-chatu'''
     @client.command(name="join")
     async def join(context):
-        global voice
         channel=context.author.voice.channel
         voice=get(client.voice_clients,guild=context.guild)
-        if voice and voice.is_connected():
-            if voice.channel==channel:
-                await context.message.channel.send(f"I'm already here!")
-            else:
-                await voice.disconnect()
-                await context.message.channel.send(f"Changing voice channel to {channel}")
-                await channel.connect()
-        else:
-            await channel.connect()
-    
+        await joinVC(context,voice,channel)
+
     @client.command(name="disconnect")
     async def disconnect(context):
         voice=get(client.voice_clients,guild=context.guild)         # bierze informacje o voice chacie
         await voice.disconnect()
     
+
     @client.command(name="play")
-    async def play(context, url:str):
+    async def play(context, *searchYT:str):
+        searchYT=" ".join(searchYT)
+        channel=context.author.voice.channel
+        voice=get(client.voice_clients,guild=context.guild)
+        await joinVC(context,voice,channel)
         ydl_options={
             'format': 'bestaudio',
-            'noplaylist':'True'
             }
         ffmpeg_options={
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
@@ -95,49 +98,24 @@ def run_discord_bot():
         voice=get(client.voice_clients,guild=context.guild)
         if not voice.is_playing():
             with YoutubeDL(ydl_options) as ydl:
-                info=ydl.extract_info(url, download=False)
-            URL=info['url']
-            voice.play(FFmpegPCMAudio(URL,**ffmpeg_options))
-            voice.is_playing()
-            await context.message.channel.send("Bot is playing")
-
-    '''
-    @client.command()
-    async def help(context):
-        help_text=open('help.txt',mode='r',encoding='utf-8')
-        EmbedChannel=discord.Embed(title="Help sent",description='Check your DMs!' ,color=0x00ff00)
-        EmbedChannel.add_field(name=str(""),value=f"{context.message.author.mention}",inline=False)
-        EmbedUser=discord.Embed(title="Help:",description='help_text' ,color=0x00ff00)
-        await context.message.author.send(help_text)
-        await context.message.channel.send(embed=EmbedChannel)
-        help_text.close()
-    '''
-    
+                search_opt="ytsearch:{}"
+                search_txt=search_opt.format(searchYT)
+                info=ydl.extract_info(search_txt, download=False)
+                url=info['entries'][0]['id']
+                info2=ydl.extract_info(url,download=False)
+                URL=info2['url']
+                voice.play(FFmpegPCMAudio(URL,**ffmpeg_options))
+                voice.is_playing()
+            print("Keys\n")
+            for i in info2:
+                print(i)
+            myEmbed=discord.Embed(title=str(info2['title']),description=str(info2['channel']), color=color)
+            myEmbed.add_field(name="Duration:",value=str(info2["duration"]),inline=True)
+            myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
+            await context.message.channel.send(embed=myEmbed) 
+        
     @client.event
     async def on_ready():
         print(f'{client.user} is running!')
-        #general_channel=client.get_channel(1047996650175606797)
-        #await general_channel.send('Hello!')
 
-    '''
-    @client.event
-    async def on_message(message):
-        if message.author == client.user:
-            return
-
-
-        username = str(message.author)
-        user_message = str(message.content)
-        channel = str(message.channel)
-        
-        
-        print(f'{username} said: "{user_message}" ({channel})')
-
-        if user_message[0] == '?':
-            user_message = user_message[1:]
-            await send_message(message, user_message,username, is_private=True)
-        else:
-            await send_message(message, user_message,username, is_private=False)
-        await client.process_commands(message)
-    '''
     client.run(TOKEN)
