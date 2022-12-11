@@ -13,7 +13,16 @@ global voice
 global color
 color=0x00ff00
 
-
+class Song:
+    def __init__(self,title,channel,duration) -> None:
+        self.title=title
+        self.channel=channel
+        self.duration=duration
+    def durationFormat(self):
+        minutes=self.duration//60
+        seconds=self.duration%60
+        return str(str(minutes)+":"+str(seconds))
+    
 
 async def joinVC(context,voice,channel):
     if voice and voice.is_connected():
@@ -86,11 +95,13 @@ def run_discord_bot():
     @client.command(name="play")
     async def play(context, *searchYT:str):
         searchYT=" ".join(searchYT)
+        checkIfURL=searchYT.rfind("https://")
         channel=context.author.voice.channel
         voice=get(client.voice_clients,guild=context.guild)
         await joinVC(context,voice,channel)
         ydl_options={
             'format': 'bestaudio',
+            'noplaylist':'True'
             }
         ffmpeg_options={
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
@@ -98,19 +109,23 @@ def run_discord_bot():
         voice=get(client.voice_clients,guild=context.guild)
         if not voice.is_playing():
             with YoutubeDL(ydl_options) as ydl:
-                search_opt="ytsearch:{}"
-                search_txt=search_opt.format(searchYT)
-                info=ydl.extract_info(search_txt, download=False)
-                url=info['entries'][0]['id']
-                info2=ydl.extract_info(url,download=False)
-                URL=info2['url']
+                if checkIfURL==-1:
+                    search_opt="ytsearch:{}"
+                    search_txt=search_opt.format(searchYT)
+                    info=ydl.extract_info(search_txt, download=False)
+                    url=info['entries'][0]['id']
+                else:
+                    url=searchYT
+                info=ydl.extract_info(url,download=False)
+                URL=info['url']
                 voice.play(FFmpegPCMAudio(URL,**ffmpeg_options))
                 voice.is_playing()
-            print("Keys\n")
-            for i in info2:
-                print(i)
-            myEmbed=discord.Embed(title=str(info2['title']),description=str(info2['channel']), color=color)
-            myEmbed.add_field(name="Duration:",value=str(info2["duration"]),inline=True)
+            #print("Keys\n")
+            #for i in info2:
+                #print(i)
+            song1=Song(info['title'],info['channel'],info['duration'])
+            myEmbed=discord.Embed(title=str(song1.title),description=str(song1.channel), color=color)
+            myEmbed.add_field(name="Duration:",value=song1.durationFormat(),inline=True)
             myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
             await context.message.channel.send(embed=myEmbed) 
         
