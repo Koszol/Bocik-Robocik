@@ -14,20 +14,27 @@ global color
 color=0x00ff00
 
 class Song:
-    def __init__(self,title,channel,duration) -> None:
+    def __init__(self,title,channel,duration,webpage_url,urlYT) -> None:
         self.title=title
         self.channel=channel
         self.duration=duration
+        self.webpage_url=webpage_url
+        self.urlYT=urlYT
     def durationFormat(self):
         minutes=self.duration//60
         seconds=self.duration%60
+        if seconds<=10:
+            seconds=str("0"+str(seconds))
         return str(str(minutes)+":"+str(seconds))
-    
+
+
+
 
 async def joinVC(context,voice,channel):
     if voice and voice.is_connected():
         if voice.channel==channel:
-            await context.message.channel.send(f"I'm already here!")
+            #await context.message.channel.send(f"I'm already here!")
+            pass
         else:
             await voice.disconnect()
             await context.message.channel.send(f"Changing voice channel to {channel}")
@@ -94,6 +101,9 @@ def run_discord_bot():
 
     @client.command(name="play")
     async def play(context, *searchYT:str):
+        if not searchYT:
+            await context.message.channel.send("No link")
+            return
         searchYT=" ".join(searchYT)
         checkIfURL=searchYT.rfind("https://")
         channel=context.author.voice.channel
@@ -113,22 +123,22 @@ def run_discord_bot():
                     search_opt="ytsearch:{}"
                     search_txt=search_opt.format(searchYT)
                     info=ydl.extract_info(search_txt, download=False)
-                    url=info['entries'][0]['id']
+                    url=info['entries'][0]['url']
+                    song1=Song(info['entries'][0]['title'],info['entries'][0]['channel'],info['entries'][0]['duration'],info['entries'][0]['webpage_url'],info['entries'][0]['url'])                
                 else:
                     url=searchYT
-                info=ydl.extract_info(url,download=False)
-                URL=info['url']
-                voice.play(FFmpegPCMAudio(URL,**ffmpeg_options))
+                    info=ydl.extract_info(url,download=False)
+                    song1=Song(info['title'],info['channel'],info['duration'],info['webpage_url'],info['url'])
+                voice.play(FFmpegPCMAudio(song1.urlYT,**ffmpeg_options))
                 voice.is_playing()
-            #print("Keys\n")
-            #for i in info2:
-                #print(i)
-            song1=Song(info['title'],info['channel'],info['duration'])
+
             myEmbed=discord.Embed(title=str(song1.title),description=str(song1.channel), color=color)
             myEmbed.add_field(name="Duration:",value=song1.durationFormat(),inline=True)
             myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
+            myEmbed.add_field(name=str("Link:"),value=f"[URL]({song1.webpage_url})",inline=True)
             await context.message.channel.send(embed=myEmbed) 
-        
+        else:
+            await context.message.channel.send("Bot is playing")
     @client.event
     async def on_ready():
         print(f'{client.user} is running!')
