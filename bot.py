@@ -1,6 +1,5 @@
 # bot.py
 import discord
-import responses
 from discord.ext import commands
 from discord.utils import get
 from youtube_dl import YoutubeDL
