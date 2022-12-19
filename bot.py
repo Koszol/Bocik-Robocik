@@ -52,6 +52,16 @@ class Queue:
         "urlYT":urlYT
         }
         self.queuelist.append(songToAdd)
+    def listSongs(self):
+        self.songNumber=[]
+        self.songNames=[]
+        self.channelNames=[]
+        self.durationNames=[]
+        for i in self.queuelist:
+            self.songNames.append(i.get("title"))
+            self.channelNames.append(i.get("channel"))
+            self.durationNames.append(durationFormat(i.get("duration")))
+
 
 queue1=Queue()
 
@@ -136,7 +146,7 @@ def run_discord_bot():
     '''Pinguje autora''' 
     @client.command(name='pingme')
     async def pingme(context):
-        await context.message.channel.send(f"{context.message.author.mention}")
+        await context.message.channel.send(f"{context.message.author.mention}, dumb bitch!")
     
     '''Obsluga voice-chatu'''
     @client.command(name="join")
@@ -193,6 +203,19 @@ def run_discord_bot():
         myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
         myEmbed.add_field(name=str("Link:"),value=f"[URL]({songNowPlaying.webpage_url})",inline=True)        
         await context.message.channel.send(embed=myEmbed)
+
+    @client.command(name="queue")
+    async def queue(context):
+        queue1.listSongs()  
+        embed=discord.Embed(title="Queue", color=color)
+        if queue1.songNames==[]:
+            embed.add_field(name="Queue is empty!",value="Add song to queue with play command",inline=False)
+        else:
+            for i in range(len(queue1.songNames)):
+                nameVal=str(str(i+1)+'. '+str(queue1.songNames[i]))
+                valVal=str(str(queue1.channelNames[i])+' '+queue1.durationNames[i])
+                embed.add_field(name=nameVal,value=valVal,inline=False)
+        await context.message.channel.send(embed=embed)
 
     @client.event
     async def on_ready():
