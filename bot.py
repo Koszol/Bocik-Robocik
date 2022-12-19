@@ -8,7 +8,7 @@ from discord import TextChannel
 import os
 from dotenv import load_dotenv
 import random
-
+from classes import *
 
 global voice
 
@@ -25,46 +25,7 @@ ffmpeg_options={
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
     'options': '-vn'}
 
-
-class Song:
-    def __init__(self,title,channel,duration,webpage_url,urlYT) -> None:
-        self.title=title
-        self.channel=channel
-        self.duration=duration
-        self.webpage_url=webpage_url
-        self.urlYT=urlYT
-
-def durationFormat(duration):
-    minutes=duration//60
-    seconds=duration%60
-    if seconds<=10:
-        seconds=str("0"+str(seconds))
-    return str(str(minutes)+":"+str(seconds))
-
-class Queue:
-    def __init__(self) -> None:
-        self.queuelist=[]
-    def addSong(self,title, channel, duration, webpage_url, urlYT):
-        songToAdd={"title":title,
-        "channel": channel,
-        "duration":duration,
-        "webpage_url":webpage_url,
-        "urlYT":urlYT
-        }
-        self.queuelist.append(songToAdd)
-    def listSongs(self):
-        self.songNumber=[]
-        self.songNames=[]
-        self.channelNames=[]
-        self.durationNames=[]
-        for i in self.queuelist:
-            self.songNames.append(i.get("title"))
-            self.channelNames.append(i.get("channel"))
-            self.durationNames.append(durationFormat(i.get("duration")))
-
-
-queue1=Queue()
-
+'''funkcje'''
 def checkQueue(queue1,voice):
     if queue1.queuelist!=[]:
         songObj=Song(queue1.queuelist[0].get("title"),queue1.queuelist[0].get("channel"),queue1.queuelist[0].get("duration"),queue1.queuelist[0].get("webpage_url"),queue1.queuelist[0].get("urlYT"))
@@ -89,7 +50,6 @@ def searchSong(searchYT,checkIfURL,ydl_options):
             url=searchYT
             info=ydl.extract_info(url,download=False)
             return Song(info['title'],info['channel'],info['duration'],info['webpage_url'],info['url'])    
-
 
 async def joinVC(context,voice,channel):
     if voice and voice.is_connected():
@@ -117,6 +77,8 @@ def roll_number(*args):
             return str(random.randint(int(args[0]),int(args[1])))
     else:
         return 'Wrong number of arguments'
+
+queue1=Queue()
 
 '''komendy i eventy'''
 def run_discord_bot():
@@ -160,7 +122,7 @@ def run_discord_bot():
         voice=get(client.voice_clients,guild=context.guild)         # bierze informacje o voice chacie
         await voice.disconnect()
     
-
+    '''Granie lub dodanie do kolejki'''
     @client.command(name="play")
     async def play(context, *searchYT:str):
         if not searchYT:
@@ -195,6 +157,7 @@ def run_discord_bot():
             myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
             myEmbed.add_field(name=str("Link:"),value=f"[URL]({songObj.webpage_url})",inline=True)
             await context.message.channel.send(embed=myEmbed)
+    
     '''wyswietlenie aktualnej nuty'''
     @client.command(name="nowplaying")
     async def nowplaying(context):
@@ -204,6 +167,7 @@ def run_discord_bot():
         myEmbed.add_field(name=str("Link:"),value=f"[URL]({songNowPlaying.webpage_url})",inline=True)        
         await context.message.channel.send(embed=myEmbed)
 
+    '''Sprawdzenie kolejki'''
     @client.command(name="queue")
     async def queue(context):
         queue1.listSongs()  
