@@ -25,7 +25,6 @@ class Queue:
         }
         self.queuelist.append(songToAdd)
     def listSongs(self):
-        self.songNumber=[]
         self.songNames=[]
         self.channelNames=[]
         self.durationNames=[]
