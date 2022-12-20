@@ -9,6 +9,7 @@ from discord import TextChannel
 color=0x00ff00
 queue1=Queue()
 
+
 '''opcje wyszukiwania yt i grania muzyki'''
 ydl_options={
     'format': 'bestaudio',
@@ -57,10 +58,7 @@ def checkQueue(queue1,voice):
 class Music(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
-    @commands.command()
-    async def hello(self,context):
-        await context.message.channel.send("Hello World!")
-    @commands.command()
+    @commands.command(description="**Aktualna kolejka muzyki**")
     async def queue(self,context):
         queue1.listSongs()  
         embed=discord.Embed(title="Queue", color=color)
@@ -72,7 +70,7 @@ class Music(commands.Cog):
                 valVal=str(str(queue1.channelNames[i])+' '+queue1.durationNames[i])
                 embed.add_field(name=nameVal,value=valVal,inline=False)
         await context.message.channel.send(embed=embed)
-    @commands.command()
+    @commands.command(description="**Aktualnie grana muzyka**")
     async def nowplaying(self,context):
         myEmbed=discord.Embed(title=str(songNowPlaying.title),description=str(songNowPlaying.channel), color=color)
         myEmbed.add_field(name="Duration:",value=durationFormat(songNowPlaying.duration),inline=True)
@@ -80,7 +78,7 @@ class Music(commands.Cog):
         myEmbed.add_field(name=str("Link:"),value=f"[URL]({songNowPlaying.webpage_url})",inline=True)
         await context.message.channel.send("Now playing")        
         await context.message.channel.send(embed=myEmbed)
-    @commands.command()
+    @commands.command(description="**Włącza muzykę lub dodaj do kolejki**\nMożna podać URL z YT lub wpisać frazę do wyszukania")
     async def play(self,context, *searchYT:str):
         if not searchYT:
             await context.message.channel.send("No link")
@@ -93,8 +91,6 @@ class Music(commands.Cog):
         voice=get(self.bot.voice_clients,guild=context.guild)
         if not voice.is_playing():
             songObj=searchSong(searchYT,checkIfURL,ydl_options)
-            #queue1=Queue(songObj.title,songObj.channel,songObj.duration,songObj.webpage_url,songObj.urlYT)
-
             playMusic(songObj,ffmpeg_options,voice)
             myEmbed=discord.Embed(title=str(songObj.title),description=str(songObj.channel), color=color)
             myEmbed.add_field(name="Duration:",value=durationFormat(songObj.duration),inline=True)

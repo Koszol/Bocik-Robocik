@@ -1,3 +1,7 @@
+import discord
+from discord.ext import commands
+color=0x00ff00
+
 def durationFormat(duration):
     minutes=duration//60
     seconds=duration%60
@@ -32,3 +36,10 @@ class Queue:
             self.songNames.append(i.get("title"))
             self.channelNames.append(i.get("channel"))
             self.durationNames.append(durationFormat(i.get("duration")))
+
+class MyNewHelp(commands.MinimalHelpCommand):
+    async def send_pages(self):
+        destination = self.get_destination()
+        for page in self.paginator.pages:
+            emby = discord.Embed(description=page,color=color)
+            await destination.send(embed=emby)
