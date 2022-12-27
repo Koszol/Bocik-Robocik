@@ -26,14 +26,14 @@ def playMusic(songObj,ffmpeg,voice):
     voice.is_playing()
 
 async def joinVC(context,voice,channel):
+    global diff_voice_chat
+    diff_voice_chat=False
     if voice and voice.is_connected():
         if voice.channel==channel:
-            #await context.message.channel.send(f"I'm already here!")
             pass
         else:
-            await voice.disconnect()
-            await context.message.channel.send(f"Changing voice channel to {channel}")
-            await channel.connect()
+            await context.message.channel.send(f"Bot gra na innym czacie!")
+            diff_voice_chat=True
     else:
         await channel.connect()
 
@@ -78,35 +78,39 @@ class Music(commands.Cog):
         myEmbed.add_field(name=str("Link:"),value=f"[URL]({songNowPlaying.webpage_url})",inline=True)
         await context.message.channel.send("Now playing")        
         await context.message.channel.send(embed=myEmbed)
-    @commands.command(description="**Włącza muzykę lub dodaj do kolejki**\nMożna podać URL z YT lub wpisać frazę do wyszukania")
+    @commands.command(description="**Włącza muzykę lub dodaj do kolejki**\nMożna podać URL z YT lub wpisać frazę do wyszukania\n\nPrzykład:\n**!play** linkYT\n**!play** daria laura")
     async def play(self,context, *searchYT:str):
         if not searchYT:
-            await context.message.channel.send("No link")
+            await context.message.channel.send("Podaj link lub frazę!")
             return
+        #print(context.author.voice.channel)
+        if not context.author.voice:
+            await context.message.channel.send("Nie jesteś na żadnym czacie głosowym!")
+            return            
         searchYT=" ".join(searchYT)
         checkIfURL=searchYT.rfind("https://")
         channel=context.author.voice.channel
         voice=get(self.bot.voice_clients,guild=context.guild)
         await joinVC(context,voice,channel)
         voice=get(self.bot.voice_clients,guild=context.guild)
-        if not voice.is_playing():
-            songObj=searchSong(searchYT,checkIfURL,ydl_options)
-            playMusic(songObj,ffmpeg_options,voice)
-            myEmbed=discord.Embed(title=str(songObj.title),description=str(songObj.channel), color=color)
-            myEmbed.add_field(name="Duration:",value=durationFormat(songObj.duration),inline=True)
-            myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
-            myEmbed.add_field(name=str("Link:"),value=f"[URL]({songObj.webpage_url})",inline=True)
-            await context.message.channel.send(embed=myEmbed) 
-        else:
-
-            songObj=searchSong(searchYT,checkIfURL,ydl_options)            
-            queue1.addSong(songObj.title,songObj.channel,songObj.duration,songObj.webpage_url,songObj.urlYT)    
-            await context.message.channel.send("Added to queue")
-            myEmbed=discord.Embed(title=str(songObj.title),description=str(songObj.channel), color=color)
-            myEmbed.add_field(name="Duration:",value=durationFormat(songObj.duration),inline=True)
-            myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
-            myEmbed.add_field(name=str("Link:"),value=f"[URL]({songObj.webpage_url})",inline=True)
-            await context.message.channel.send(embed=myEmbed)
+        if diff_voice_chat==False:
+            if not voice.is_playing():
+                songObj=searchSong(searchYT,checkIfURL,ydl_options)
+                playMusic(songObj,ffmpeg_options,voice)
+                myEmbed=discord.Embed(title=str(songObj.title),description=str(songObj.channel), color=color)
+                myEmbed.add_field(name="Długość:",value=durationFormat(songObj.duration),inline=True)
+                myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
+                myEmbed.add_field(name=str("Link:"),value=f"[URL]({songObj.webpage_url})",inline=True)
+                await context.message.channel.send(embed=myEmbed)
+            else:
+                songObj=searchSong(searchYT,checkIfURL,ydl_options)            
+                queue1.addSong(songObj.title,songObj.channel,songObj.duration,songObj.webpage_url,songObj.urlYT)    
+                await context.message.channel.send("Dodano do kolejki")
+                myEmbed=discord.Embed(title=str(songObj.title),description=str(songObj.channel), color=color)
+                myEmbed.add_field(name="Długość:",value=durationFormat(songObj.duration),inline=True)
+                myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=True)
+                myEmbed.add_field(name=str("Link:"),value=f"[URL]({songObj.webpage_url})",inline=True)
+                await context.message.channel.send(embed=myEmbed)
 
 async def setup(bot):
     await bot.add_cog(Music(bot))

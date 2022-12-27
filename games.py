@@ -24,7 +24,7 @@ def roll_number(*args):
 class Games(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
-    @commands.command(description="**Losuje dowolną liczbę(domyślnie zakres 1-6)**\nMożna zmienić zakres\nPrzykład: \n**!roll 10**  losuje od 1 do 10\n**!roll 5 10**  losuje od 5 do 10")
+    @commands.command(description="**Losuje dowolną liczbę(domyślnie zakres 1-6)**\nMożna zmienić zakres\n\nPrzykład: \n**!roll 10**  losuje od 1 do 10\n**!roll 5 10**  losuje od 5 do 10")
     async def roll(self,context, *args):
         myEmbed=discord.Embed(title="ROLLED:",description=roll_number(*args), color=color)
         myEmbed.add_field(name=str("Requested by: "),value=f"{context.message.author.mention}",inline=False)
