@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from typing import Optional
 color=0x00ff00
 
 def durationFormat(duration):
@@ -7,25 +8,27 @@ def durationFormat(duration):
     seconds=duration%60
     if seconds<=10:
         seconds=str("0"+str(seconds))
-    return str(str(minutes)+":"+str(seconds))
+        return str(str(minutes)+":"+str(seconds))
+
 
 class Song:
-    def __init__(self,title,channel,duration,webpage_url,urlYT) -> None:
+    def __init__(self,title,channel,duration,webpage_url,urlYT,requestPerson=None):
         self.title=title
         self.channel=channel
         self.duration=duration
         self.webpage_url=webpage_url
         self.urlYT=urlYT
+        self.requestPerson=requestPerson
 
 class Queue:
     def __init__(self) -> None:
         self.queuelist=[]
-    def addSong(self,title, channel, duration, webpage_url, urlYT):
-        songToAdd={"title":title,
-        "channel": channel,
-        "duration":duration,
-        "webpage_url":webpage_url,
-        "urlYT":urlYT
+    def addSong(self,songAdd: Song):
+        songToAdd={"title":songAdd.title,
+        "channel": songAdd.channel,
+        "duration":songAdd.duration,
+        "webpage_url":songAdd.webpage_url,
+        "urlYT":songAdd.urlYT
         }
         self.queuelist.append(songToAdd)
     def listSongs(self):
@@ -35,7 +38,8 @@ class Queue:
         for i in self.queuelist:
             self.songNames.append(i.get("title"))
             self.channelNames.append(i.get("channel"))
-            self.durationNames.append(durationFormat(i.get("duration")))
+            #self.durationNames.append(durationFormat(i.get("duration")))
+            
 
 class MyNewHelp(commands.MinimalHelpCommand):
     async def send_pages(self):
