@@ -95,6 +95,7 @@ class Music(commands.Cog):
         searchYT=" ".join(searchYT)
         checkIfURL=searchYT.rfind("youtube.com/watch")
         channel=context.author.voice.channel
+        global voice
         voice=get(self.bot.voice_clients,guild=context.guild)
         await joinVC(context,voice,channel)
         voice=get(self.bot.voice_clients,guild=context.guild)
@@ -107,10 +108,19 @@ class Music(commands.Cog):
                 await context.message.channel.send(embed=myEmbed)
             else:
                 songObj=searchSong(searchYT,checkIfURL,ydl_options)            
-                queue1.addSong(songObj.title,songObj.channel,songObj.duration,songObj.webpage_url,songObj.urlYT)    
+                queue1.addSong(songAdd=songObj)    
                 await context.message.channel.send("Dodano do kolejki")
                 myEmbed=makeEmbed(context,songObj)
                 await context.message.channel.send(embed=myEmbed)
+    @commands.command()
+    async def forceskip(self,context):
+        if context.message.author==context.guild.owner:
+            voice.stop()
+            checkQueue(queue1,voice)
+            await context.message.channel.send("Pominięto")
+        else:
+            await context.message.channel.send("Nie masz uprawnień!")
+
 
 async def setup(bot):
     await bot.add_cog(Music(bot))

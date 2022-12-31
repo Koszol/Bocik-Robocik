@@ -20,12 +20,12 @@ class Song:
 class Queue:
     def __init__(self) -> None:
         self.queuelist=[]
-    def addSong(self,title, channel, duration, webpage_url, urlYT):
-        songToAdd={"title":title,
-        "channel": channel,
-        "duration":duration,
-        "webpage_url":webpage_url,
-        "urlYT":urlYT
+    def addSong(self, songAdd:Song):
+        songToAdd={"title":songAdd.title,
+        "channel": songAdd.channel,
+        "duration":songAdd.duration,
+        "webpage_url":songAdd.webpage_url,
+        "urlYT":songAdd.urlYT
         }
         self.queuelist.append(songToAdd)
     def listSongs(self):
