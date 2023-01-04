@@ -5,10 +5,12 @@ from discord.utils import get
 from youtube_dl import YoutubeDL
 from discord import FFmpegPCMAudio
 from discord import TextChannel
+from math import ceil
 
 color=0x00ff00
 queue1=Queue()
-
+global skipCount
+skipCount=0
 
 '''opcje wyszukiwania yt i grania muzyki'''
 ydl_options={
@@ -19,7 +21,7 @@ ffmpeg_options={
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
     'options': '-vn'}
 
-def playMusic(songObj,ffmpeg,voice):
+async def playMusic(songObj,ffmpeg,voice):
     global songNowPlaying
     songNowPlaying=songObj
     voice.play(FFmpegPCMAudio(songObj.urlYT,**ffmpeg), after=lambda x=None: checkQueue(queue1,voice))
@@ -57,11 +59,13 @@ def searchSong(searchYT,checkIfURL,ydl_options):
             url=searchYT
             info=ydl.extract_info(url,download=False)
             return Song(info['title'],info['channel'],info['duration'],info['webpage_url'],info['url'])    
-def checkQueue(queue1,voice):
+async def checkQueue(queue1,voice):
     if queue1.queuelist!=[]:
         songObj=Song(queue1.queuelist[0].get("title"),queue1.queuelist[0].get("channel"),queue1.queuelist[0].get("duration"),queue1.queuelist[0].get("webpage_url"),queue1.queuelist[0].get("urlYT"))
-        playMusic(songObj,ffmpeg_options,voice)
+        await playMusic(songObj,ffmpeg_options,voice)
         queue1.queuelist.pop(0)
+    else:
+        await voice.disconnect()
 
 class Music(commands.Cog):
     def __init__(self,bot):
@@ -102,7 +106,7 @@ class Music(commands.Cog):
         if diff_voice_chat==False:
             if not voice.is_playing():
                 songObj=searchSong(searchYT,checkIfURL,ydl_options)
-                playMusic(songObj,ffmpeg_options,voice)
+                await playMusic(songObj,ffmpeg_options,voice)
                 await context.message.channel.send("Aktualnie grane")
                 myEmbed=makeEmbed(context,songObj)
                 await context.message.channel.send(embed=myEmbed)
@@ -112,15 +116,30 @@ class Music(commands.Cog):
                 await context.message.channel.send("Dodano do kolejki")
                 myEmbed=makeEmbed(context,songObj)
                 await context.message.channel.send(embed=myEmbed)
-    @commands.command()
+    @commands.command(description="**Pomija aktualną piosenkę**\nTej komendy może użyć tylko właściciel serwera")
     async def forceskip(self,context):
         if context.message.author==context.guild.owner:
             voice.stop()
-            checkQueue(queue1,voice)
+            await checkQueue(queue1,voice)
             await context.message.channel.send("Pominięto")
         else:
             await context.message.channel.send("Nie masz uprawnień!")
-
+    @commands.command()
+    async def skip(self,context):
+        if not context.author.voice.channel:
+            await context.message.channel.send("Nie jesteś na żadnym kanale!")
+            return
+        channel=context.author.voice.channel
+        if voice.channel!=channel:
+            await context.message.channel.send("Nie jesteś na tym samym czacie głosowym co bot!")
+            return
+        global skipCount
+        skipCount+=1
+        number_of_users=ceil(len(channel.members)-1)
+        if(skipCount>=number_of_users):
+            voice.stop()
+            await checkQueue(queue1,voice)
+        #print(voice.members)
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
