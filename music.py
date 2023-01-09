@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from classes import Queue,Song,durationFormat
 from discord.utils import get
 from youtube_dl import YoutubeDL
@@ -11,7 +11,10 @@ color=0x00ff00
 queue1=Queue()
 global skipCount
 skipCount=0
-
+global disconnectCheck
+disconnectCheck=False
+global voice
+voice=None
 '''opcje wyszukiwania yt i grania muzyki'''
 ydl_options={
     'format': 'bestaudio',
@@ -21,7 +24,8 @@ ffmpeg_options={
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
     'options': '-vn'}
 
-async def playMusic(songObj,ffmpeg,voice):
+
+def playMusic(songObj,ffmpeg,voice):
     global songNowPlaying
     songNowPlaying=songObj
     voice.play(FFmpegPCMAudio(songObj.urlYT,**ffmpeg), after=lambda x=None: checkQueue(queue1,voice))
@@ -59,17 +63,29 @@ def searchSong(searchYT,checkIfURL,ydl_options):
             url=searchYT
             info=ydl.extract_info(url,download=False)
             return Song(info['title'],info['channel'],info['duration'],info['webpage_url'],info['url'])    
-async def checkQueue(queue1,voice):
+def checkQueue(queue1,voice):
     if queue1.queuelist!=[]:
         songObj=Song(queue1.queuelist[0].get("title"),queue1.queuelist[0].get("channel"),queue1.queuelist[0].get("duration"),queue1.queuelist[0].get("webpage_url"),queue1.queuelist[0].get("urlYT"))
-        await playMusic(songObj,ffmpeg_options,voice)
-        queue1.queuelist.pop(0)
-    else:
-        await voice.disconnect()
+        queue1.queuelist.pop(0)    
+        playMusic(songObj,ffmpeg_options,voice)
+
 
 class Music(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
+        self.disconnect.start()
+
+    '''Odpowiada za wyjscie z czatu głosowego'''
+    @tasks.loop(seconds=5.0)
+    async def disconnect(self):
+        if voice is None:
+            return
+        else:
+            if not voice.is_playing() and voice.is_connected():
+                await voice.disconnect()
+                global songNowPlaying
+                songNowPlaying=None
+
     @commands.command(description="**Aktualna kolejka muzyki**")
     async def queue(self,context):
         queue1.listSongs()  
@@ -84,8 +100,11 @@ class Music(commands.Cog):
         await context.message.channel.send(embed=embed)
     @commands.command(description="**Aktualnie grana muzyka**")
     async def nowplaying(self,context):
-        myEmbed=makeEmbed(context,songNowPlaying)
-        await context.message.channel.send("Aktualnie grane")        
+        if songNowPlaying==None:
+            myEmbed=discord.Embed(title="Nic aktualnie nie gra!",description="Dodaj piosenkę za pomocą komendy !play",color=color)
+        else:
+            myEmbed=makeEmbed(context,songNowPlaying)
+            await context.message.channel.send("Aktualnie grane")        
         await context.message.channel.send(embed=myEmbed)
     @commands.command(description="**Włącza muzykę lub dodaj do kolejki**\nMożna podać URL z YT lub wpisać frazę do wyszukania\n\nPrzykład:\n**!play** linkYT\n**!play** daria laura")
     async def play(self,context, *searchYT:str):
@@ -106,7 +125,7 @@ class Music(commands.Cog):
         if diff_voice_chat==False:
             if not voice.is_playing():
                 songObj=searchSong(searchYT,checkIfURL,ydl_options)
-                await playMusic(songObj,ffmpeg_options,voice)
+                playMusic(songObj,ffmpeg_options,voice)
                 await context.message.channel.send("Aktualnie grane")
                 myEmbed=makeEmbed(context,songObj)
                 await context.message.channel.send(embed=myEmbed)
@@ -120,7 +139,7 @@ class Music(commands.Cog):
     async def forceskip(self,context):
         if context.message.author==context.guild.owner:
             voice.stop()
-            await checkQueue(queue1,voice)
+            checkQueue(queue1,voice)
             await context.message.channel.send("Pominięto")
         else:
             await context.message.channel.send("Nie masz uprawnień!")
@@ -138,7 +157,7 @@ class Music(commands.Cog):
         number_of_users=ceil(len(channel.members)-1)
         if(skipCount>=number_of_users):
             voice.stop()
-            await checkQueue(queue1,voice)
+            checkQueue(queue1,voice)
         #print(voice.members)
 
 async def setup(bot):
